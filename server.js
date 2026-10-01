@@ -9,7 +9,7 @@ app.use(bodyParser.json());
 const VERIFY_TOKEN = "safidy_token_123";
 const PAGE_ACCESS_TOKEN = "EAATZByEgoNvkBSj9zsQACNj6QBI05K4CyBbE9fRIZCtDF5HOBLRSpKt4IMKC2fulalqrvhrahT1MZCw3vkD2ghV3pCZBqY60dvz67ESeqBcD6fWz6IMMwjD3uVo9X58J3gs9xhi0ZCUjZAvFKInp65KqlJmYatNB9JQLCFbeGdtqsWmz1cyofE5o61qPoic5ASuosVP3HcmwZDZD";
 
-// Mampiasa ny Environment Variable voatahiry ao amin'ny Render
+// Mampiasa ny Environment Variable ho an'ny Gemini API Key fotsiny
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 app.get('/webhook', (req, res) => {
@@ -58,9 +58,76 @@ async function handleUserMessage(senderPsid, message) {
         const userPrompt = message.text;
         
         try {
-            // Mampiasa ny gemini-1.5-flash izy izao mba ho azo antoka fa mandeha tsara
+            // Mampiasa ny gemini-2.0-flash marina tsara
             const response = await ai.models.generateContent({
-                model: 'gemini-1.5-flash',
+                model: 'gemini-2.0-flash',
+                contents: userPrompt,
+            });
+
+            const aiReply = response.text || "Tsy nahazo valiny mazava aho.";
+const express = require('express');
+const bodyParser = require('body-parser');
+const axios = require('axios');
+const { GoogleGenAI } = require('@google/genai');
+
+const app = express();
+app.use(bodyParser.json());
+
+const VERIFY_TOKEN = "safidy_token_123";
+const PAGE_ACCESS_TOKEN = "EAATZByEgoNvkBSj9zsQACNj6QBI05K4CyBbE9fRIZCtDF5HOBLRSpKt4IMKC2fulalqrvhrahT1MZCw3vkD2ghV3pCZBqY60dvz67ESeqBcD6fWz6IMMwjD3uVo9X58J3gs9xhi0ZCUjZAvFKInp65KqlJmYatNB9JQLCFbeGdtqsWmz1cyofE5o61qPoic5ASuosVP3HcmwZDZD";
+
+// Mampiasa ny Environment Variable ho an'ny Gemini API Key fotsiny
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
+app.get('/webhook', (req, res) => {
+    let mode = req.query['hub.mode'];
+    let token = req.query['hub.verify_token'];
+    let challenge = req.query['hub.challenge'];
+    if (mode && token === VERIFY_TOKEN) {
+        res.status(200).send(challenge);
+    } else {
+        res.sendStatus(403);
+    }
+});
+
+app.post('/webhook', async (req, res) => {
+    const body = req.body;
+
+    if (body.object === 'page') {
+        for (let entry of body.entry) {
+            let webhookEvent = entry.messaging[0];
+            let senderPsid = webhookEvent.sender.id;
+
+            if (webhookEvent.postback && webhookEvent.postback.payload === 'GET_STARTED_PAYLOAD') {
+                await sendIntroduction(senderPsid);
+            } 
+            else if (webhookEvent.message) {
+                await handleUserMessage(senderPsid, webhookEvent.message);
+            }
+        }
+        res.status(200).send('EVENT_RECEIVED');
+    } else {
+        res.sendStatus(404);
+    }
+});
+
+async function sendIntroduction(senderPsid) {
+    const introText = 
+        `👋 Tonga soa eto amin'ny AI Bot!\n\n` +
+        `Ity bot ity dia mampiasa AI matanjaka be! Afaka miresaka aminy ianao na mandefa fanontaniana rehetra tiany ho valiana. 🤖✨\n\n` +
+        `Andao ary hanomboka! Manorata hafatra na fanontaniana eto.`;
+    
+    await sendTextMessage(senderPsid, introText);
+}
+
+async function handleUserMessage(senderPsid, message) {
+    if (message.text) {
+        const userPrompt = message.text;
+        
+        try {
+            // Mampiasa ny gemini-2.0-flash marina tsara
+            const response = await ai.models.generateContent({
+                model: 'gemini-2.0-flash',
                 contents: userPrompt,
             });
 
