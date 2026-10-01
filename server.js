@@ -58,9 +58,9 @@ async function handleUserMessage(senderPsid, message) {
         const userPrompt = message.text;
         
         try {
-            // Fiantsoana ny Gemini AI hamaliana ilay hafatra
+            // Mampiasa ny gemini-1.5-flash izy izao mba ho azo antoka fa mandeha tsara
             const response = await ai.models.generateContent({
-                model: 'gemini-2.5-flash',
+                model: 'gemini-1.5-flash',
                 contents: userPrompt,
             });
 
