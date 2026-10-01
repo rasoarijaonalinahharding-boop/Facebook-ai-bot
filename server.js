@@ -6,36 +6,59 @@ const { GoogleGenAI } = require('@google/genai');
 const app = express();
 app.use(bodyParser.json());
 
-const VERIFY_TOKEN = "safidy_token_123";
-const PAGE_ACCESS_TOKEN = "EAATZByEgoNvkBSj9zsQACNj6QBI05K4CyBbE9fRIZCtDF5HOBLRSpKt4IMKC2fulalqrvhrahT1MZCw3vkD2ghV3pCZBqY60dvz67ESeqBcD6fWz6IMMwjD3uVo9X58J3gs9xhi0ZCUjZAvFKInp65KqlJmYatNB9JQLCFbeGdtqsWmz1cyofE5o61qPoic5ASuosVP3HcmwZDZD";
+// Alao ny Token sy ny Secret avy amin'ny Render Environment Variables
+const PAGE_ACCESS_TOKEN = process.env.PAGE_ACCESS_TOKEN;
+const VERIFY_TOKEN = process.env.VERIFY_TOKEN;
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
-// Mampiasa ny Environment Variable ho an'ny Gemini API Key fotsiny
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+// Fanombohana an'ilay SDK vaovao Google Gen AI
+const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
+// Fizarana Webhook ho an'ny Meta (Facebook Messenger Verification)
 app.get('/webhook', (req, res) => {
-    let mode = req.query['hub.mode'];
-    let token = req.query['hub.verify_token'];
-    let challenge = req.query['hub.challenge'];
-    if (mode && token === VERIFY_TOKEN) {
-        res.status(200).send(challenge);
+    const mode = req.query['hub.mode'];
+    const token = req.query['hub.verify_token'];
+    const challenge = req.query['hub.challenge'];
+
+    if (mode && token) {
+        if (mode === 'subscribe' && token === VERIFY_TOKEN) {
+            console.log('WEBHOOK_VERIFIED');
+            res.status(200).send(challenge);
+        } else {
+            res.sendStatus(403);
+        }
     } else {
-        res.sendStatus(403);
+        res.sendStatus(400);
     }
 });
 
+// Fizarana handraisana ny hafatra avy amin'ny mpampiasa
 app.post('/webhook', async (req, res) => {
     const body = req.body;
 
     if (body.object === 'page') {
-        for (let entry of body.entry) {
-            let webhookEvent = entry.messaging[0];
-            let senderPsid = webhookEvent.sender.id;
+        for (const entry of body.entry) {
+            const webhookEvent = entry.messaging[0];
+            const senderPsid = webhookEvent.sender.id;
 
-            if (webhookEvent.postback && webhookEvent.postback.payload === 'GET_STARTED_PAYLOAD') {
-                await sendIntroduction(senderPsid);
-            } 
-            else if (webhookEvent.message) {
-                await handleUserMessage(senderPsid, webhookEvent.message);
+            if (webhookEvent.message && webhookEvent.message.text) {
+                const userPrompt = webhookEvent.message.text;
+                
+                try {
+                    // Miantso an'i Gemini mampiasa ilay model marina
+                    const response = await ai.models.generateContent({
+                        model: 'gemini-2.0-flash',
+                        contents: userPrompt,
+                    });
+
+                    const botReply = response.text || "Miala tsiny, tsy nahazo valiny aho.";
+                    
+                    // Mandefa ny valiny hiverinaany amin'ny mpampiasa ao amin'ny Messenger
+                    await callSendAPI(senderPsid, botReply);
+                } catch (error) {
+                    console.error("Hadisoana tamin'ny AI:", error);
+                    await callSendAPI(senderPsid, "Miala tsiny, nisy olana kely tamin'ny fiasan'ny AI tamin'ity indray mitoraka ity.");
+                }
             }
         }
         res.status(200).send('EVENT_RECEIVED');
@@ -44,115 +67,22 @@ app.post('/webhook', async (req, res) => {
     }
 });
 
-async function sendIntroduction(senderPsid) {
-    const introText = 
-        `👋 Tonga soa eto amin'ny AI Bot!\n\n` +
-        `Ity bot ity dia mampiasa AI matanjaka be! Afaka miresaka aminy ianao na mandefa fanontaniana rehetra tiany ho valiana. 🤖✨\n\n` +
-        `Andao ary hanomboka! Manorata hafatra na fanontaniana eto.`;
-    
-    await sendTextMessage(senderPsid, introText);
-}
+// Asa mandefa ny hafatra any amin'ny Facebook Send API
+async function callSendAPI(senderPsid, responseText) {
+    const requestBody = {
+        recipient: { id: senderPsid },
+        message: { text: responseText }
+    };
 
-async function handleUserMessage(senderPsid, message) {
-    if (message.text) {
-        const userPrompt = message.text;
-        
-        try {
-            // Mampiasa ny gemini-2.0-flash marina tsara
-            const response = await ai.models.generateContent({
-                model: 'gemini-2.0-flash',
-                contents: userPrompt,
-            });
-
-            const aiReply = response.text || "Tsy nahazo valiny mazava aho.";
-const express = require('express');
-const bodyParser = require('body-parser');
-const axios = require('axios');
-const { GoogleGenAI } = require('@google/genai');
-
-const app = express();
-app.use(bodyParser.json());
-
-const VERIFY_TOKEN = "safidy_token_123";
-const PAGE_ACCESS_TOKEN = "EAATZByEgoNvkBSj9zsQACNj6QBI05K4CyBbE9fRIZCtDF5HOBLRSpKt4IMKC2fulalqrvhrahT1MZCw3vkD2ghV3pCZBqY60dvz67ESeqBcD6fWz6IMMwjD3uVo9X58J3gs9xhi0ZCUjZAvFKInp65KqlJmYatNB9JQLCFbeGdtqsWmz1cyofE5o61qPoic5ASuosVP3HcmwZDZD";
-
-// Mampiasa ny Environment Variable ho an'ny Gemini API Key fotsiny
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-
-app.get('/webhook', (req, res) => {
-    let mode = req.query['hub.mode'];
-    let token = req.query['hub.verify_token'];
-    let challenge = req.query['hub.challenge'];
-    if (mode && token === VERIFY_TOKEN) {
-        res.status(200).send(challenge);
-    } else {
-        res.sendStatus(403);
-    }
-});
-
-app.post('/webhook', async (req, res) => {
-    const body = req.body;
-
-    if (body.object === 'page') {
-        for (let entry of body.entry) {
-            let webhookEvent = entry.messaging[0];
-            let senderPsid = webhookEvent.sender.id;
-
-            if (webhookEvent.postback && webhookEvent.postback.payload === 'GET_STARTED_PAYLOAD') {
-                await sendIntroduction(senderPsid);
-            } 
-            else if (webhookEvent.message) {
-                await handleUserMessage(senderPsid, webhookEvent.message);
-            }
-        }
-        res.status(200).send('EVENT_RECEIVED');
-    } else {
-        res.sendStatus(404);
-    }
-});
-
-async function sendIntroduction(senderPsid) {
-    const introText = 
-        `👋 Tonga soa eto amin'ny AI Bot!\n\n` +
-        `Ity bot ity dia mampiasa AI matanjaka be! Afaka miresaka aminy ianao na mandefa fanontaniana rehetra tiany ho valiana. 🤖✨\n\n` +
-        `Andao ary hanomboka! Manorata hafatra na fanontaniana eto.`;
-    
-    await sendTextMessage(senderPsid, introText);
-}
-
-async function handleUserMessage(senderPsid, message) {
-    if (message.text) {
-        const userPrompt = message.text;
-        
-        try {
-            // Mampiasa ny gemini-2.0-flash marina tsara
-            const response = await ai.models.generateContent({
-                model: 'gemini-2.0-flash',
-                contents: userPrompt,
-            });
-
-            const aiReply = response.text || "Tsy nahazo valiny mazava aho.";
-            await sendTextMessage(senderPsid, aiReply);
-
-        } catch (error) {
-            console.error("Hadisoana tamin'ny AI:", error);
-            await sendTextMessage(senderPsid, "Miala tsiny, nisy olana kely tamin'ny fiasan'ny AI tamin'ity indray mitoraka ity.");
-        }
-    }
-}
-
-async function sendTextMessage(recipientPsid, messageText) {
     try {
-        await axios.post('https://graph.facebook.com/v18.0/me/messages?access_token=' + PAGE_ACCESS_TOKEN, {
-            recipient: { id: recipientPsid },
-            message: { text: messageText }
-        });
+        await axios.post(`https://graph.facebook.com/v18.0/me/messages?access_token=${PAGE_ACCESS_TOKEN}`, requestBody);
     } catch (error) {
-        console.error("Tsy tafita ilay hafatra:", error.response?.data || error.message);
+        console.error("Tsy tafita ny hafatra any amin'ny Messenger:", error.response ? error.response.data : error.message);
     }
 }
 
+// Famelabelarana ny Serivisy
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`Mandeha ny bot AI eo amin'ny port ${PORT}`);
+    console.log(`Mandeha eo amin'ny Port ${PORT} ny Server-nao.`);
 });
