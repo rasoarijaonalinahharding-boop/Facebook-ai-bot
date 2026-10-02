@@ -39,12 +39,12 @@ app.post('/webhook', async (req, res) => {
                 if (webhookEvent.message && webhookEvent.message.text) {
                     let userText = webhookEvent.message.text.trim();
                     
-                    // Fitehirizana ny tantaran'ny resaka (Memory)
+                    // Fitehirizana ny tantaran'ny resaka (Memory) miaraka amin'ny System Prompt nohavaozina
                     if (!userSessions[senderPsid]) {
                         userSessions[senderPsid] = [
                             {
                                 role: "system",
-                                content: "Ianao dia i 'Safidy', bot mpivarotra sady mpanampy malagasy namoronin'i Safidy. Valio amin'ny teny Malagasy mazava, tsara fanahy ary fantaro ny resaka teo aloha."
+                                content: "Ianao dia i 'Safidy', mpanampy sy bot malagasy mahay mandray tsara sy mamaly ny karazam-panontanian'ny mpanjifa rehetra na dia maninona na ahoana aza (ohatra: fanontaniana, fitarainana, fangatahana fanampiana, fampianarana, fanaovana zavatra, na resaka tsotra). Valio amin'ny teny Malagasy madio, milamina, ary am-pitiavana hatrany ny mpanjifa."
                             }
                         ];
                     }
@@ -86,7 +86,7 @@ app.post('/webhook', async (req, res) => {
     }
 });
 
-// 3. Fiantsoana ny Groq API miaraka amin'ny Memory
+// 3. Fiantsoana ny Groq API miaraka amin'ny model openai/gpt-oss-120b sy Memory
 async function chat_groq(messagesHistory) {
     try {
         const response = await axios.post('https://api.groq.com/openai/v1/chat/completions', {
@@ -116,14 +116,13 @@ async function sendCommentReaction(commentId) {
     }
 }
 
-// 5. Mandefa Hafatra tsotra na misy Buttons ao amin'ny Messenger
+// 5. Mandefa Hafatra tsotra sy Buttons ao amin'ny Messenger
 async function sendTextMessage(recipientPsid, messageText) {
     try {
         await axios.post(`https://graph.facebook.com/v18.0/me/messages?access_token=${PAGE_ACCESS_TOKEN}`, {
             recipient: { id: recipientPsid },
             message: { 
                 text: messageText,
-                // Ohatra amin'ny fampidirana buttons raha ilaina
                 quick_replies: [
                     { content_type: "text", title: "Vokatra misy", payload: "PRODUIT" },
                     { content_type: "text", title: "Vidiny", payload: "PRIX" },
@@ -144,11 +143,11 @@ async function sendPrivateReply(recipientId, messageText) {
             message: { text: messageText }
         });
     } catch (error) {
-        console.error("Tsy tafita ny Private Reply:", error.response?.data || error.message);
+        console.error("Tsy tafita ny Private Reply:", error.message);
     }
 }
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`Mandeha ny bot Safidy AI miaraka amin'ny Memory sy Private Reply eo amin'ny port ${PORT}`);
+    console.log(`Mandeha ny bot Safidy AI (gpt-oss-120b) eo amin'ny port ${PORT}`);
 });
