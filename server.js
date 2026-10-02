@@ -8,7 +8,6 @@ app.use(bodyParser.json());
 const VERIFY_TOKEN = "safidy_token_123";
 const PAGE_ACCESS_TOKEN = "EAATZByEgoNvkBSj9zsQACNj6QBI05K4CyBbE9fRIZCtDF5HOBLRSpKt4IMKC2fulalqrvhrahT1MZCw3vkD2ghV3pCZBqY60dvz67ESeqBcD6fWz6IMMwjD3uVo9X58J3gs9xhi0ZCUjZAvFKInp65KqlJmYatNB9JQLCFbeGdtqsWmz1cyofE5o61qPoic5ASuosVP3HcmwZDZD";
 
-// Groq API Key alaina avy amin'ny environment variables ao amin'ny Render
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 
 app.get('/webhook', (req, res) => {
@@ -56,11 +55,11 @@ app.post('/webhook', async (req, res) => {
     }
 });
 
-// Fiantsoana an'i Groq AI (Haingana be sady tsy misy tapaka)
+// Fiantsoana an'i Groq AI miaraka amin'ny model marina
 async function chat_groq(prompt) {
     try {
         const response = await axios.post('https://api.groq.com/openai/v1/chat/completions', {
-            model: "llama-3.3-70b-versatile", // Azonao ampiasaina ihany koa ny "llama-3.1-8b-instant"
+            model: "llama-3.1-8b-instant", // Model vaovao azo antoka fa mandeha ao amin'ny Groq
             messages: [
                 {
                     role: "system",
