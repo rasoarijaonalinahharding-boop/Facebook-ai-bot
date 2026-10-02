@@ -10,6 +10,7 @@ const PAGE_ACCESS_TOKEN = "EAATZByEgoNvkBSj9zsQACNj6QBI05K4CyBbE9fRIZCtDF5HOBLRS
 
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 
+// 1. Fanamarinana ny Webhook avy amin'i Facebook
 app.get('/webhook', (req, res) => {
     let mode = req.query['hub.mode'];
     let token = req.query['hub.verify_token'];
@@ -21,13 +22,14 @@ app.get('/webhook', (req, res) => {
     }
 });
 
+// 2. Fandraisana ny Hafatra sy Hevitra (Comments) avy amin'ny Page
 app.post('/webhook', async (req, res) => {
     const body = req.body;
 
     if (body.object === 'page') {
         for (let entry of body.entry) {
             
-            // 1. Messenger messages
+            // Raha toa ka hafatra tao amin'ny Messenger
             if (entry.messaging) {
                 let webhookEvent = entry.messaging[0];
                 let senderPsid = webhookEvent.sender.id;
@@ -39,7 +41,7 @@ app.post('/webhook', async (req, res) => {
                 }
             }
 
-            // 2. Comment reactions
+            // Raha toa ka fanehoan-kevitra (comment) tamin'ny post
             if (entry.changes) {
                 for (let change of entry.changes) {
                     if (change.field === 'feed' && change.value.item === 'comment' && change.value.verb === 'add') {
@@ -55,11 +57,11 @@ app.post('/webhook', async (req, res) => {
     }
 });
 
-// Fiantsoana an'i Groq AI miaraka amin'ny model marina sy stable
+// 3. Fiantsoana ny Groq AI miaraka amin'ny maodely marin-toetra sy mandeha tsara
 async function chat_groq(prompt) {
     try {
         const response = await axios.post('https://api.groq.com/openai/v1/chat/completions', {
-            model: "llama3-70b-8192", // Modèle stable et garanti sur Groq
+            model: "llama-3.3-70b-versatile", // Maodely vaovao sady matanjaka ary mandeha tsara
             messages: [
                 {
                     role: "system",
@@ -85,6 +87,7 @@ async function chat_groq(prompt) {
     }
 }
 
+// 4. Asiana "Like" ho otomatika ny Comment
 async function sendCommentReaction(commentId) {
     try {
         await axios.post(`https://graph.facebook.com/v18.0/${commentId}/reactions?reaction_type=LIKE&access_token=` + PAGE_ACCESS_TOKEN);
@@ -93,6 +96,7 @@ async function sendCommentReaction(commentId) {
     }
 }
 
+// 5. Mandefa ny valinteny any amin'ny Messenger
 async function sendTextMessage(recipientPsid, messageText) {
     try {
         await axios.post('https://graph.facebook.com/v18.0/me/messages?access_token=' + PAGE_ACCESS_TOKEN, {
