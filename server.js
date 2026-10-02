@@ -94,15 +94,15 @@ async function processUserMessage(message) {
         return "💰 Lazao ny produit tadiavinao dia hojerentsika ny vidiny.";
     }
 
-    // Raha tsy misy amin'ireo dia alefa mivantana any amin'i Gemini AI izy
+    // Raha tsy misy amin'ireo dia alefa mivantana any amin'i Gemini AI mampiasa ilay model gemini-3.8-flash
     return await chat_ai(message);
 }
 
-// Asa miantso an'i Gemini AI
+// Asa miantso an'i Gemini AI mampiasa ny gemini-3.8-flash
 async function chat_ai(prompt) {
     try {
         const response = await ai.models.generateContent({
-            model: 'gemini-2.0-flash',
+            model: 'gemini-3.8-flash',
             contents: prompt,
         });
         return response.text || "Tsy nahazo valiny mazava aho.";
