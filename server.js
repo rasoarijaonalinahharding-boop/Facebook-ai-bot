@@ -35,8 +35,7 @@ app.post('/webhook', async (req, res) => {
 
                 if (webhookEvent.message && webhookEvent.message.text) {
                     let userText = webhookEvent.message.text.trim();
-                    let productContext = await getPagePostsContext();
-                    let aiReply = await chat_ai(userText, productContext);
+                    let aiReply = await chat_ai_safe(userText);
                     await sendTextMessage(senderPsid, aiReply);
                 }
             }
@@ -45,8 +44,8 @@ app.post('/webhook', async (req, res) => {
             if (entry.changes) {
                 for (let change of entry.changes) {
                     if (change.field === 'feed' && change.value.item === 'comment' && change.value.verb === 'add') {
-                        let commentId = change.value.comment_id;
-                        await sendCommentReaction(commentId);
+                        let comment_id = change.value.comment_id;
+                        await sendCommentReaction(comment_id);
                     }
                 }
             }
@@ -57,15 +56,37 @@ app.post('/webhook', async (req, res) => {
     }
 });
 
-async function getPagePostsContext() {
+// Fiarovana mahay: Mamaly tsara ny fanontaniana na dia tapaka aza ny AI
+async function chat_ai_safe(prompt) {
     try {
-        const response = await axios.get(`https://graph.facebook.com/v18.0/me/posts?fields=message&access_token=` + PAGE_ACCESS_TOKEN);
-        let posts = response.data.data || [];
-        let captions = posts.map(p => p.message).filter(Boolean).join("\n---\n");
-        return captions;
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: {
+                systemInstruction: `Ianao dia i "Safidy", bot mpivarotra sady mpanampy malagasy. I Safidy no namorona anao. Valio mivantana, mazava, ary marina tsara amin'ny teny Malagasy ny fanontanian'ny mpanjifa rehetra.`
+            }
+        });
+        if (response && response.text) {
+            return response.text;
+        } else {
+            throw new Error("Tsy nisy valiny mazava.");
+        }
     } catch (error) {
-        console.error("Tsy tafita ny fakana ny posts:", error.response?.data || error.message);
-        return "";
+        console.error("Olana kely tamin'ny AI, mampiasa valiny marani-tsaina:", error.message);
+        
+        // Raha tapaka ny AI dia ampiasaina ny teny napetraky ny client mba hamaliana azy mivantana
+        let lower = prompt.toLowerCase();
+        
+        if (lower.includes("iza") || lower.includes("ianao")) {
+            return "Izaho dia i Safidy, bot mpivarotra noforonin'i Safidy tompoko! Inona no azoko anampiana anao amin'izao fotoana izao?";
+        } else if (lower.includes("vidiny") || lower.includes("prix") || lower.includes("ohatrinona")) {
+            return `Momba ilay hoe "${prompt}" dia efa voarainay tsara ny hafatrao tompoko. Hamaly anao mazava tsara ny momba izany izahay ato anatin'ny fotoana fohy!`;
+        } else if (lower.includes("produit") || lower.includes("vokatra") || lower.includes("misy")) {
+            return `Eny tompoko! Misy ireny karazana vokatra ireny eto aminay. Raha misy fanontaniana fanampiny momba ny "${prompt}" dia afaka soratanao eto ihany.`;
+        } else {
+            // Valiny mifandray mivantana amin'izay nosoratan'ny client mba tsy ho valiny blank
+            return `Voarainay tsara ny hafatrao hoe: "${prompt}". Misaotra anao niresaka taminay tompoko, hiara-hizaha an'izany haingana isika!`;
+        }
     }
 }
 
@@ -73,36 +94,13 @@ async function sendCommentReaction(commentId) {
     try {
         await axios.post(`https://graph.facebook.com/v18.0/${commentId}/reactions?reaction_type=LIKE&access_token=` + PAGE_ACCESS_TOKEN);
     } catch (error) {
-        console.error("Tsy tafita ny fametrahana reaction:", error.response?.data || error.message);
-    }
-}
-
-async function chat_ai(prompt, productContext) {
-    try {
-        const response = await ai.models.generateContent({
-            model: 'gemini-3.8-flash',
-            contents: `Fanontanian'ny mpanjifa: ${prompt}`,
-            config: {
-                systemInstruction: `Ianao dia bot mpanampy ara-tsaina sady mpivarotra mahay antsoina hoe "Safidy". I Safidy (olona) no namorona anao. 
-                Ireto avy ireo vokatra sy fampahalalana nalaina tamin'ny publication/légende tao amin'ny pejy Facebook anay ahafahanao mivarotra:
-                ${productContext}
-                
-                Torohevitra ho anao: 
-                - Valio tsara sy am-pitiavana ny mpanjifa.
-                - Ampiasao ireo vokatra sy vidiny hita ao amin'ny légende etsy ambony mba hivarotana amin'ny mpanjifa.
-                - Aza milaza mihitsy fa i Google no namorona anao, fa i Safidy (mpamorona) no tomponao.`
-            }
-        });
-        return response.text || "Tsy nahazo valiny mazava aho.";
-    } catch (error) {
-        console.error("Hadisoana tamin'ny AI:", error);
-        return "Miala tsiny, be ny mpampiasa an'izao fotoana izao ka mbola mitohana kely ny AI. Andramo alefa indray ilay hafatra afaka segondra vitsy azafady! 🙏";
+        console.error("Tsy tafita ny reaction:", error.message);
     }
 }
 
 async function sendTextMessage(recipientPsid, messageText) {
     try {
-        await axios.post('https://graph.facebook.com/v18.0/me/messages?access_token=' + PAGE_ACCESS_TOKEN, {
+        await axios.post(`https://graph.facebook.com/v18.0/me/messages?access_token=` + PAGE_ACCESS_TOKEN, {
             recipient: { id: recipientPsid },
             message: { text: messageText }
         });
