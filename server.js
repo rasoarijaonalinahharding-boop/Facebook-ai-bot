@@ -57,11 +57,11 @@ app.post('/webhook', async (req, res) => {
     }
 });
 
-// 3. Fiantsoana ny Groq AI miaraka amin'ny maodely marin-toetra sy mandeha tsara
+// 3. Fiantsoana ny Groq API miaraka amin'ny model openai/gpt-oss-120b
 async function chat_groq(prompt) {
     try {
         const response = await axios.post('https://api.groq.com/openai/v1/chat/completions', {
-            model: "llama-3.3-70b-versatile", // Maodely vaovao sady matanjaka ary mandeha tsara
+            model: "openai/gpt-oss-120b", // Ilay model nangatahinao
             messages: [
                 {
                     role: "system",
