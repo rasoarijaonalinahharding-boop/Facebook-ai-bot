@@ -55,11 +55,11 @@ app.post('/webhook', async (req, res) => {
     }
 });
 
-// Fiantsoana an'i Groq AI miaraka amin'ny model marina
+// Fiantsoana an'i Groq AI miaraka amin'ny model marina sy stable
 async function chat_groq(prompt) {
     try {
         const response = await axios.post('https://api.groq.com/openai/v1/chat/completions', {
-            model: "llama-3.1-8b-instant", // Model vaovao azo antoka fa mandeha ao amin'ny Groq
+            model: "llama3-70b-8192", // Modèle stable et garanti sur Groq
             messages: [
                 {
                     role: "system",
@@ -81,7 +81,7 @@ async function chat_groq(prompt) {
         return response.data.choices[0].message.content.trim();
     } catch (error) {
         console.error("Hadisoana tamin'ny Groq API:", error.response?.data || error.message);
-        return `Voarainay tsara ny hafatrao hoe: "${prompt}". Misaotra anao niresaka taminay tompoko, hifandray aminao haingana izahay!`;
+        return `Miala tsiny tompoko, nisy olana kely tamin'ny rafitra. Azonao averina alefa indray ilay hafatra azafady?`;
     }
 }
 
