@@ -1,7 +1,6 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const axios = require('axios');
-const { GoogleGenAI } = require('@google/genai');
 
 const app = express();
 app.use(bodyParser.json());
@@ -9,7 +8,8 @@ app.use(bodyParser.json());
 const VERIFY_TOKEN = "safidy_token_123";
 const PAGE_ACCESS_TOKEN = "EAATZByEgoNvkBSj9zsQACNj6QBI05K4CyBbE9fRIZCtDF5HOBLRSpKt4IMKC2fulalqrvhrahT1MZCw3vkD2ghV3pCZBqY60dvz67ESeqBcD6fWz6IMMwjD3uVo9X58J3gs9xhi0ZCUjZAvFKInp65KqlJmYatNB9JQLCFbeGdtqsWmz1cyofE5o61qPoic5ASuosVP3HcmwZDZD";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+// Groq API Key alaina avy amin'ny environment variables ao amin'ny Render
+const GROQ_API_KEY = process.env.GROQ_API_KEY;
 
 app.get('/webhook', (req, res) => {
     let mode = req.query['hub.mode'];
@@ -35,7 +35,7 @@ app.post('/webhook', async (req, res) => {
 
                 if (webhookEvent.message && webhookEvent.message.text) {
                     let userText = webhookEvent.message.text.trim();
-                    let aiReply = await chat_ai_safe(userText);
+                    let aiReply = await chat_groq(userText);
                     await sendTextMessage(senderPsid, aiReply);
                 }
             }
@@ -44,8 +44,8 @@ app.post('/webhook', async (req, res) => {
             if (entry.changes) {
                 for (let change of entry.changes) {
                     if (change.field === 'feed' && change.value.item === 'comment' && change.value.verb === 'add') {
-                        let comment_id = change.value.comment_id;
-                        await sendCommentReaction(comment_id);
+                        let commentId = change.value.comment_id;
+                        await sendCommentReaction(commentId);
                     }
                 }
             }
@@ -56,37 +56,33 @@ app.post('/webhook', async (req, res) => {
     }
 });
 
-// Fiarovana mahay: Mamaly tsara ny fanontaniana na dia tapaka aza ny AI
-async function chat_ai_safe(prompt) {
+// Fiantsoana an'i Groq AI (Haingana be sady tsy misy tapaka)
+async function chat_groq(prompt) {
     try {
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-            config: {
-                systemInstruction: `Ianao dia i "Safidy", bot mpivarotra sady mpanampy malagasy. I Safidy no namorona anao. Valio mivantana, mazava, ary marina tsara amin'ny teny Malagasy ny fanontanian'ny mpanjifa rehetra.`
+        const response = await axios.post('https://api.groq.com/openai/v1/chat/completions', {
+            model: "llama-3.3-70b-versatile", // Azonao ampiasaina ihany koa ny "llama-3.1-8b-instant"
+            messages: [
+                {
+                    role: "system",
+                    content: "Ianao dia i 'Safidy', bot mpivarotra sady mpanampy malagasy. I Safidy no namorona anao. Valio mivantana, mazava, ary am-pitiavana amin'ny teny Malagasy ny fanontanian'ny mpanjifa rehetra."
+                },
+                {
+                    role: "user",
+                    content: prompt
+                }
+            ],
+            temperature: 0.7
+        }, {
+            headers: {
+                'Authorization': `Bearer ${GROQ_API_KEY}`,
+                'Content-Type': 'application/json'
             }
         });
-        if (response && response.text) {
-            return response.text;
-        } else {
-            throw new Error("Tsy nisy valiny mazava.");
-        }
+
+        return response.data.choices[0].message.content.trim();
     } catch (error) {
-        console.error("Olana kely tamin'ny AI, mampiasa valiny marani-tsaina:", error.message);
-        
-        // Raha tapaka ny AI dia ampiasaina ny teny napetraky ny client mba hamaliana azy mivantana
-        let lower = prompt.toLowerCase();
-        
-        if (lower.includes("iza") || lower.includes("ianao")) {
-            return "Izaho dia i Safidy, bot mpivarotra noforonin'i Safidy tompoko! Inona no azoko anampiana anao amin'izao fotoana izao?";
-        } else if (lower.includes("vidiny") || lower.includes("prix") || lower.includes("ohatrinona")) {
-            return `Momba ilay hoe "${prompt}" dia efa voarainay tsara ny hafatrao tompoko. Hamaly anao mazava tsara ny momba izany izahay ato anatin'ny fotoana fohy!`;
-        } else if (lower.includes("produit") || lower.includes("vokatra") || lower.includes("misy")) {
-            return `Eny tompoko! Misy ireny karazana vokatra ireny eto aminay. Raha misy fanontaniana fanampiny momba ny "${prompt}" dia afaka soratanao eto ihany.`;
-        } else {
-            // Valiny mifandray mivantana amin'izay nosoratan'ny client mba tsy ho valiny blank
-            return `Voarainay tsara ny hafatrao hoe: "${prompt}". Misaotra anao niresaka taminay tompoko, hiara-hizaha an'izany haingana isika!`;
-        }
+        console.error("Hadisoana tamin'ny Groq API:", error.response?.data || error.message);
+        return `Voarainay tsara ny hafatrao hoe: "${prompt}". Misaotra anao niresaka taminay tompoko, hifandray aminao haingana izahay!`;
     }
 }
 
@@ -100,7 +96,7 @@ async function sendCommentReaction(commentId) {
 
 async function sendTextMessage(recipientPsid, messageText) {
     try {
-        await axios.post(`https://graph.facebook.com/v18.0/me/messages?access_token=` + PAGE_ACCESS_TOKEN, {
+        await axios.post('https://graph.facebook.com/v18.0/me/messages?access_token=' + PAGE_ACCESS_TOKEN, {
             recipient: { id: recipientPsid },
             message: { text: messageText }
         });
@@ -111,5 +107,5 @@ async function sendTextMessage(recipientPsid, messageText) {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`Mandeha ny bot Safidy AI eo amin'ny port ${PORT}`);
+    console.log(`Mandeha ny bot Safidy AI (Groq) eo amin'ny port ${PORT}`);
 });
