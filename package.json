@@ -1,7 +1,6 @@
 {
   "name": "messenger-ai-bot",
   "version": "1.0.0",
-  "description": "Messenger AI Bot",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
