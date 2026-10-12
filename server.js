@@ -39,8 +39,7 @@ const MAX_USER_TEXT = 1000;             // halavan'ny hafatra ekena (litera)
 
 const QUICK_REPLIES = [
     { content_type: 'text', title: '💡 Fanampiana', payload: 'HELP' },
-    { content_type: 'text', title: '✍️ Manoratra / Handika', payload: 'WRITE' },
-    { content_type: 'text', title: '👤 Mpiasa / Admin', payload: 'HUMAN' }
+    { content_type: 'text', title: '✍️ Manoratra / Handika', payload: 'WRITE' }
 ];
 
 const QUICK_PROMPTS = {
@@ -48,10 +47,10 @@ const QUICK_PROMPTS = {
     WRITE: 'Afaka manampy ahy hanoratra lahatsoratra na handika teny ve ianao?'
 };
 
-const HANDOFF_WORDS = new Set(['agent', 'humain', 'human', 'mpiasa', 'conseiller', 'responsable', 'manager',
-    'operator', 'operateur', 'opérateur', 'olona', 'admin']);
+// Raha toa ka tena mitady olona/mpiasa mihitsy ny mpampiasa vao mandefa any amin'ny admin
+const HANDOFF_WORDS = new Set(['mpiasa tena izy', 'tadiavo ny tompony', 'admin tena izy']);
 
-const HANDOFF_TEXT = "Eny tompoko, hampandrenesiko ny tompon'andraikitra izao ary hamaly anao ao anatin'ny fotoana fohy izy ireo. 🙏";
+const HANDOFF_TEXT = "Eny tompoko, nampandrenesiko ny tompon'andraikitra izao. Hamaly anao izy ireo rehefa tafiditra.";
 const PAUSED_TEXT = 'Efa nampandrenesinay ny tompon\'andraikitra, hamaly anao tsy ho ela. Misaotra amin\'ny faharetanao. 🙏';
 
 // ====================== FITEHIRIZANA VONJIMAIKA ======================
@@ -141,7 +140,7 @@ function validSignature(req) {
     return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
-// ============================ SYSTEM PROMPT ============================
+// ============================ SYSTEM PROMPT (MAHALEO TENA) ============================
 function nowMada() {
     return new Intl.DateTimeFormat('fr-FR', {
         timeZone: TZ_NAME, weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
@@ -150,16 +149,18 @@ function nowMada() {
 }
 
 function buildSystemPrompt() {
-    return `You are "${BOT_NAME}", a general helpful AI virtual assistant on Facebook Messenger.
+    return `You are "${BOT_NAME}", an autonomous, highly capable general AI virtual assistant on Facebook Messenger.
 
 LANGUAGE AND TONE
 - Default language: clear, polite, natural Malagasy ("teny Malagasy madio"). If the user writes in French or English, answer in that language.
 - Friendly, smart, clear, and professional. Be concise: 2 to 5 short sentences when possible.
 - Plain text only: no markdown, no asterisks, no headings, no tables. A simple list with "-" is allowed for items. At most one emoji per message, only when natural.
 
-CAPABILITIES
-- Answer general questions, help with writing, brainstorm ideas, explain concepts, give advice, and chat naturally.
-- If the user asks to talk to a person, is upset, or you cannot handle the request, politely say a team member will reply and add [[HUMAN]] at the very end of your message.
+AUTONOMY AND PROBLEM SOLVING (IMPORTANT)
+- Be fully autonomous. Handle complex questions, technical topics, general knowledge, math, coding, creative tasks, and difficult queries directly using your intelligence.
+- Interpret abbreviations, slang, typos, or shorthand terms intelligently based on context. 
+- If a message is ambiguous or unclear, do not give up or transfer to a human; instead, politely ask a clarifying question to the user to better understand what they mean.
+- Never use the [[HUMAN]] marker or ask for an admin unless the user explicitly and repeatedly insists on talking to a real human being.
 
 SAFETY AND PRIVACY
 - Never ask for or accept sensitive personal data like passwords, bank details, or Mobile Money PINs.
@@ -232,12 +233,12 @@ async function handleMessagingEvent(psid, ev) {
 }
 
 function welcomeText() {
-    return `Salama tompoko! 👋 Izaho i ${BOT_NAME}, mpanampy virtoaly AI. Afaka manampy anao amin'ny fanontaniana ankapobeny, famoronana lahatsoratra, na resaka samihafa aho. Inona no azoko hanampiana anao androany?`;
+    return `Salama tompoko! 👋 Izaho i ${BOT_NAME}, mpanampy virtoaly AI mahaleo tena. Afaka manampy anao amin'ny fanontaniana sarotra, famoronana, fandikan-teny, na resaka rehetra aho. Inona no azoko hanampiana anao androany?`;
 }
 
 async function handleQuick(psid, payload, title) {
     if (payload === 'HUMAN') {
-        await doHandoff(psid, 'Nanindry ny bokotra Mpiasa/Admin', '');
+        await doHandoff(psid, 'Nangataka mpiasa manokana', '');
     } else if (QUICK_PROMPTS[payload]) {
         await handleUserText(psid, QUICK_PROMPTS[payload]);
     } else if (title) {
@@ -317,9 +318,8 @@ async function doHandoff(psid, reason, lastText) {
     pauseBot(psid, false);
     const name = await getUserName(psid);
     await notifyAdmins(
-        `🔔 Mila mpiasa / Admin\nMpanjifa: ${name || 'tsy fantatra'} (ID: ${psid})\nAntony:${reason}` +
-        (lastText ? `\nHafatra farany: "${String(lastText).slice(0, 200)}"` : '') +
-        `\nHamerina ny bot: !resume ${psid}`
+        `🔔 Nangataka mpiasa manokana\nMpanjifa: ${name || 'tsy fantatra'} (ID: ${psid})\nAntony:${reason}` +
+        (lastText ? `\nHafatra farany: "${String(lastText).slice(0, 200)}"` : '')
     );
     await sendTextMessage(psid, HANDOFF_TEXT, { quick: false });
 }
@@ -327,7 +327,7 @@ async function doHandoff(psid, reason, lastText) {
 async function handleAttachments(psid, attachments) {
     const real = attachments.filter(a => ['image', 'audio', 'video', 'file'].includes(a.type));
     if (!real.length) return;
-    await sendTextMessage(psid, "Voaray ny rakitra nalefanao ✅ Avelao aho raha mila fanazavana fanampiny.");
+    await sendTextMessage(psid, "Voaray ny rakitra nalefanao ✅ Inona no tianao hataontsika aminy?");
 }
 
 // ============================ UTILS ============================
@@ -476,7 +476,7 @@ async function handleUserText(psid, text) {
     const cleanText = text.trim().slice(0, MAX_USER_TEXT);
     const words = cleanText.toLowerCase().split(/\s+/);
     if (words.some(w => HANDOFF_WORDS.has(normWord(w)))) {
-        await doHandoff(psid, 'Nangataka mpiasa/admin', cleanText);
+        await doHandoff(psid, 'Nangataka mpiasa manokana mivantana', cleanText);
         return;
     }
 
@@ -510,17 +510,17 @@ async function handleUserText(psid, text) {
         }
 
         if (human) {
-            await doHandoff(psid, 'Nangataka olona ny AI na nisy olana', cleanText);
+            await doHandoff(psid, 'Nangataka olona ny mpampiasa', cleanText);
         }
 
     } catch (e) {
         logErr('Groq AI Error:', e);
-        await doHandoff(psid, 'Nisy olana tamin\'ny AI', cleanText);
+        // Tsy mandefa any amin'ny admin intsony fa mbola manandrana mamaly tsara na miala tsiny fohy
+        await sendTextMessage(psid, "Miala tsiny tompoko, nisy olana kely ny fikarohana. Azonao averina atao kely ve ilay fanontaniana?");
     }
 }
 
 // ============================ START SERVER ============================
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`Server dia mandeha amin'ny port ${PORT}...`);
-});
+    console.log(`Se
