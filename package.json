@@ -1,14 +1,17 @@
 {
   "name": "facebook-ai-bot",
-  "version": "1.0.0",
-  "description": "Messenger AI Bot",
-  "main": "server.js",
+  "version": "2.2.0",
+  "private": true,
+  "type": "module",
+  "description": "Facebook Messenger AI bot using xAI Grok and Imagine APIs",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "node --check server.js"
   },
   "dependencies": {
-    "axios": "^1.7.9",
-    "body-parser": "^1.20.3",
     "express": "^4.21.2"
   }
 }
