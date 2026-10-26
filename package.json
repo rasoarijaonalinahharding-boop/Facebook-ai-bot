@@ -1,9 +1,9 @@
 {
-  "name": "facebook-ai-bot",
-  "version": "2.2.0",
+  "name": "facebook-ai-bot-groq-free",
+  "version": "3.0.0",
   "private": true,
   "type": "module",
-  "description": "Facebook Messenger AI bot using xAI Grok and Imagine APIs",
+  "description": "Facebook Messenger AI bot using Groq Free Tier (chat and browser search)",
   "engines": {
     "node": ">=20"
   },

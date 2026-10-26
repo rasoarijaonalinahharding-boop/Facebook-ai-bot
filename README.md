@@ -1,33 +1,39 @@
-# Facebook AI Bot — Grok + Imagine (v2.2.0)
+# Facebook AI Bot — Groq Free Tier (v3.0.0)
 
-Bot Facebook Messenger mampiasa ny xAI Responses API sy Imagine APIs. Afaka manao Chat AI, recherche Internet, mamorona sary sy vidéo, mamadika soratra ho feo, mandinika sary alefan'ny mpampiasa, ary manampy amin'ny Business/marketing.
+Bot Facebook Messenger mampiasa ny Groq API Free Tier ho an'ny **Chat AI** sy **recherche web**. Ny model default dia `openai/gpt-oss-120b`; manohana browser search ao amin'ny Groq API izy io. Misy fetra fampiasana maimaim-poana, ka rehefa tratra ny quota dia mety hiverina ny HTTP 429 mandra-piverin'ny quota. Tsy tokony hisy sarany raha mijanona amin'ny Free Tier ianao; aza manavao ho Developer/Paid raha tsy te handoa.
 
-## Files
+## Rakitra
 - `server.js` — kaody fototra.
-- `package.json` — dependencies sy scripts.
+- `package.json` — dependencies sy baiko start/test.
 - `render.yaml` — Render configuration.
 - `.env.example` — ohatra tsy misy secrets.
 - `.gitignore` — manakana ny `.env` sy `node_modules` tsy ho ampidirina.
+- `README.md` — torolalana.
+
+## API key maimaim-poana
+1. Sokafy ny [Groq Console](https://console.groq.com/).
+2. Mamoròna kaonty ary sokafy ny API Keys: <https://console.groq.com/keys>.
+3. Mamoròna API key vaovao.
+4. Ao amin'ny Render → Web Service → Environment, ampio `GROQ_API_KEY` miaraka amin'ilay key.
+5. Apetraho `GROQ_MODEL` = `openai/gpt-oss-120b`.
+
+Aza mampiditra API key, Page Access Token, App Secret, na `.env` ao amin'ny GitHub. Tehirizo ho secrets ao amin'ny Render izy ireo.
 
 ## Render Environment Variables
-Ampidiro ao amin'ny Render → Web Service → Environment:
-- `XAI_API_KEY` — API key avy amin'ny xAI Console.
+- `GROQ_API_KEY` — API key avy amin'ny Groq Console.
+- `GROQ_MODEL` = `openai/gpt-oss-120b`.
 - `PAGE_ACCESS_TOKEN` — Page Access Token avy amin'ny Meta.
-- `VERIFY_TOKEN` — teny miafina noforoninao; tsy maintsy mitovy amin'ny Verify Token ao amin'ny Meta webhook.
-- `META_APP_SECRET` — App Secret avy amin'ny Meta; takiana mba hanaovana fanamarinana sonia webhook.
-- `XAI_MODEL` = `grok-4.7`
-- `XAI_IMAGE_MODEL` = `grok-imagine-image-2.0`
-- `XAI_VIDEO_MODEL` = `grok-imagine-video-1.5`
-- `XAI_VOICE_ID` = `eve`
-- `FB_API_VERSION` = `v26.0` (ovay raha mifanaraka amin'ny version ampiasain'ny app-nao)
-- `PUBLIC_BASE_URL` = URL public an'ny Render, ohatra `https://anarana.onrender.com`. Matetika ny `RENDER_EXTERNAL_URL` ao Render no mameno azy ho azy.
+- `VERIFY_TOKEN` — teny miafina noforoninao; tsy maintsy mitovy amin'ny Verify Token ao amin'ny Meta Webhook.
+- `META_APP_SECRET` — App Secret avy amin'ny Meta; ilaina amin'ny fanamarinana sonia webhook.
+- `FB_API_VERSION` = `v26.0` (ovay raha version hafa no ampiasain'ny app-nao).
 
-Aza mampiditra API key, Page Access Token, App Secret, na `.env` ao amin'ny GitHub. Raha tsy napetraka ny `META_APP_SECRET`, dia lavina ny POST webhook ho fiarovana.
+## Fametrahana ao amin'ny GitHub
+Ampidiro eo amin'ny **fototry** (root) an'ilay repository ny rakitra rehetra ao amin'ity ZIP ity; aza mampiditra ny ZIP ho rakitra tokana. Raha efa ao ireo rakitra taloha, soloy amin'ireto version vaovao ireto. Hamarino fa `server.js` sy `package.json` no eo amin'ny root.
 
 ## Render
 - Build Command: `npm install`
 - Start Command: `npm start`
-- Health check path (raha ilaina): `/health`
+- Health check path: `/health`
 
 ## Meta Webhook
 - Callback URL: `https://YOUR-RENDER-SERVICE.onrender.com/webhook`
@@ -35,29 +41,17 @@ Aza mampiditra API key, Page Access Token, App Secret, na `.env` ao amin'ny GitH
 - Ataovy subscribe amin'ny Page events `messages` sy `messaging_postbacks`.
 - Tokony efa napetraka ao amin'ny Render ny `PAGE_ACCESS_TOKEN` sy `META_APP_SECRET`.
 
-## Endpoints
-- `/` — mijery raha mandeha ny service.
-- `/health` — sata, model voafaritra, ary variables napetraka (tsy mampiseho ny secrets).
-- `/webhook` — Meta Messenger webhook.
-- `/media/audio/:token` — rohy feo vonjimaika, lany daty ao anatin'ny 15 minitra.
-
 ## Baiko ao amin'ny Messenger
-- `/search fanontaniana` — recherche Internet live.
-- `/image famaritana` — mamorona sary.
-- `/video famaritana` — mamorona vidéo; afaka maharitra minitra vitsivitsy.
-- `/voice soratra` — mamadika soratra ho feo.
-- Mandefasa sary — dinihin'ny AI ilay sary.
-- `/business fangatahana` — fanampiana amin'ny varotra/marketing.
-- `/model` — model voafaritra ao amin'ny Render.
-- `/models` — manontany mivantana ny xAI API hoe inona avy ny model IDs hitany amin'ny API key.
-- `/reset` — mamafa ny conversation context.
+- Manorata fanontaniana tsotra — Chat AI.
+- `/search fanontaniana` — recherche web amin'ny Groq built-in browser search.
+- `/business fangatahana` — fanampiana amin'ny varotra, marketing, annonce ary service client.
+- `/model` — mijery ny model voafaritra sy ny status.
+- `/models` — mijery ny model IDs azon'ny API key-nao jerena.
+- `/reset` — mamafa ny tantaran'ny resaka ao amin'ny memory.
 - `/help` — fanampiana.
 
-## Fiarovana sy fetrany
-- Misy fetra anaty memory hanakanana hafatra sy fangatahana famoronana be loatra avy amin'ny olona iray. Miverina aotra izany rehefa restart ny service.
-- Ny conversation history sy ny audio vokarina dia tehirizina ao amin'ny memory fotsiny; very rehefa restart ny service. Tapitra ao anatin'ny 15 minitra ny audio link.
-- Tsy mbola mahavaky PDF/Word/audio mivantana ity kinova ity.
-- Ny Chat, recherche, sary, vidéo, voice dia miankina amin'ny fahazoan-dàlana sy billing ao amin'ny xAI API. Ny `/models` dia mampiseho ny IDs hitan'ny API key, fa tsy manome antoka fa manana crédit ampy amin'ny feature tsirairay ilay kaonty.
+## Fetra amin'ity kinova maimaim-poana ity
+Ity ZIP ity dia natao ho an'ny **chat sy recherche web ihany**. Tsy mamorona sary, vidéo, na feo (text-to-speech) izy ary tsy mamakafaka sary/attachments. Mila API/service hafa mety handoa vola ireo features ireo. Ny quota sy rate limits dia miankina amin'ny kaonty sy model; jereo ao amin'ny [Groq rate limits](https://console.groq.com/docs/rate-limits). Ny model ID dia azo hamarinina ao amin'ny [Groq supported models](https://console.groq.com/docs/models).
 
-## Test
-Mampiasa Node.js 20 na mihoatra. Alefaso `npm test` mba hanamarinana ny syntax JavaScript. Tsy voatery hisy `package-lock.json`; ny Render no mametraka ny dependencies voatanisa ao amin’ny `package.json`.
+## Fitsapana
+Mampiasa Node.js 20 na mihoatra. Alefaso `npm test` mba hanamarinana ny syntax JavaScript. Tsy voatery hisy `package-lock.json`; ny Render no mametraka ny dependencies ao amin'ny `package.json`.
